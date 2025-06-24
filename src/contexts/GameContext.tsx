@@ -26,6 +26,13 @@ interface Answer {
   points: number;
 }
 
+interface ChatMessage {
+  id: string;
+  username: string;
+  message: string;
+  timestamp: number;
+}
+
 interface GameState {
   roomId: string | null;
   players: Player[];
@@ -38,6 +45,7 @@ interface GameState {
   timeRemaining: number;
   answers: Answer[];
   gameStatus: 'waiting' | 'playing' | 'between-songs' | 'finished';
+  chat: ChatMessage[];
 }
 
 interface GameContextType {
@@ -51,6 +59,7 @@ interface GameContextType {
   nextSong: () => void;
   setTimeRemaining: (time: number) => void;
   isLoading: boolean;
+  sendChatMessage: (message: string) => void;
 }
 
 const defaultGameState: GameState = {
@@ -65,6 +74,7 @@ const defaultGameState: GameState = {
   timeRemaining: 30,
   answers: [],
   gameStatus: 'waiting',
+  chat: [],
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -245,6 +255,24 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     setGameState(prev => ({ ...prev, timeRemaining: time }));
   };
 
+  const sendChatMessage = (message: string) => {
+    if (!gameState.currentPlayer) return;
+
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substring(2, 11),
+      username: gameState.currentPlayer.name,
+      message,
+      timestamp: Date.now(),
+    };
+
+    setGameState(prev => ({
+      ...prev,
+      chat: [...prev.chat, newMessage],
+    }));
+
+    // TODO: Send chat message to backend via WebSocket
+  };
+
   const contextValue: GameContextType = {
     gameState,
     joinRoom,
@@ -256,6 +284,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     nextSong,
     setTimeRemaining,
     isLoading,
+    sendChatMessage,
   };
 
   return (

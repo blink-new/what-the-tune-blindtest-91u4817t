@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 export default function Lobby() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { gameState, startGame, leaveRoom } = useGame(); // Destructure gameState
+  const { gameState, startGame, leaveRoom, sendChatMessage } = useGame();
   const [chatMessage, setChatMessage] = useState('');
 
   useEffect(() => {
