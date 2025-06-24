@@ -123,13 +123,13 @@ export default function Lobby() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-400" />
-                  Players ({gameState.players.length})
+                  Players ({gameState.players?.length || 0})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3">
                   <AnimatePresence>
-                    {gameState.players.map((player, index) => (
+                    {(gameState.players || []).map((player, index) => (
                       <motion.div
                         key={player.id}
                         initial={{ opacity: 0, y: 10 }}

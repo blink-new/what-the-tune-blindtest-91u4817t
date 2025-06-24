@@ -76,7 +76,7 @@ export default function Game() {
   }
 
   const timePercentage = gameState.timeRemaining > 0 ? (gameState.timeRemaining / 30) * 100 : 0;
-  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...(gameState.players || [])].sort((a, b) => b.score - a.score);
 
   return (
     <div className="min-h-screen p-4">
@@ -228,7 +228,7 @@ export default function Game() {
               <CardContent>
                 <div className="space-y-3">
                   <AnimatePresence>
-                    {sortedPlayers.map((player, index) => (
+                    {(sortedPlayers || []).map((player, index) => (
                       <motion.div
                         key={player.id}
                         initial={{ opacity: 0, y: 10 }}

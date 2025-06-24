@@ -1,18 +1,9 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '../contexts/GameContext';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Trophy, Medal, Award, Home, RotateCcw, Share } from 'lucide-react';
-import { motion } from 'framer-motion';
-import toast from 'react-hot-toast';
-
 export default function Results() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
   const { gameState, leaveRoom, isLoading } = useGame();
 
-  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...(gameState.players || [])].sort((a, b) => b.score - a.score);
   const currentPlayerRank = sortedPlayers.findIndex(p => p.id === gameState.currentPlayer?.id) + 1;
 
   const handlePlayAgain = () => {
@@ -148,7 +139,7 @@ export default function Results() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {sortedPlayers.map((player, index) => (
+                {(sortedPlayers || []).map((player, index) => (
                   <motion.div
                     key={player.id}
                     initial={{ opacity: 0, x: -20 }}
