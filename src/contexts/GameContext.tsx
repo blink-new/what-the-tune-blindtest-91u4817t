@@ -108,6 +108,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
           roomId: storedRoomId,
           currentPlayer: player,
           players: [player],
+          chat: [], // Initialize chat to an empty array when loading from localStorage
         }));
       } catch (e) {
         console.error("Failed to parse stored player data", e);
