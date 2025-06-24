@@ -13,14 +13,14 @@ import toast from 'react-hot-toast';
 export default function Lobby() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { state, startGame, sendChatMessage, leaveRoom } = useGame();
+  const { gameState, startGame, leaveRoom } = useGame(); // Destructure gameState
   const [chatMessage, setChatMessage] = useState('');
 
   useEffect(() => {
-    if (!state.currentPlayer || state.roomId !== roomId) {
+    if (!gameState.currentPlayer && !gameState.isLoading) {
       navigate('/');
     }
-  }, [state.currentPlayer, state.roomId, roomId, navigate]);
+  }, [gameState.currentPlayer, gameState.isLoading, navigate]);
 
   const handleCopyRoomCode = () => {
     if (roomId) {
@@ -47,12 +47,20 @@ export default function Lobby() {
     navigate('/');
   };
 
-  if (!state.currentPlayer || !roomId) {
+  if (gameState.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white text-xl">
+        Loading lobby...
+      </div>
+    );
+  }
+
+  if (!gameState.currentPlayer || !roomId) {
     return null;
   }
 
-  const isHost = state.currentPlayer.isHost;
-  const canStartGame = state.players.length >= 2 && state.players.every(p => p.isReady);
+  const isHost = gameState.currentPlayer.isHost;
+  const canStartGame = gameState.players.length >= 2 && gameState.players.every(p => p.isReady);
 
   return (
     <div className="min-h-screen p-4">
@@ -115,13 +123,13 @@ export default function Lobby() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-purple-400" />
-                  Players ({state.players.length})
+                  Players ({gameState.players.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3">
                   <AnimatePresence>
-                    {state.players.map((player, index) => (
+                    {gameState.players.map((player, index) => (
                       <motion.div
                         key={player.id}
                         initial={{ opacity: 0, y: 10 }}
@@ -132,11 +140,11 @@ export default function Lobby() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold">
-                            {player.username.charAt(0).toUpperCase()}
+                            {player.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{player.username}</span>
+                              <span className="font-medium">{player.name}</span>
                               {player.isHost && (
                                 <Crown className="w-4 h-4 text-yellow-400" />
                               )}
@@ -163,7 +171,7 @@ export default function Lobby() {
                 {!canStartGame && (
                   <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
                     <p className="text-yellow-200 text-sm">
-                      {state.players.length < 2 
+                      {gameState.players.length < 2 
                         ? "Waiting for more players to join..."
                         : "Waiting for all players to be ready..."
                       }
@@ -191,7 +199,7 @@ export default function Lobby() {
               <CardContent className="flex-1 flex flex-col p-0">
                 <div className="flex-1 p-4 overflow-y-auto space-y-3">
                   <AnimatePresence>
-                    {state.chat.map((message) => (
+                    {gameState.chat.map((message) => (
                       <motion.div
                         key={message.id}
                         initial={{ opacity: 0, y: 10 }}

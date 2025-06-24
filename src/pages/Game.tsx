@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 export default function Game() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { state, submitAnswer } = useGame();
+  const { gameState, submitAnswer, isLoading } = useGame();
   const [isPlaying, setIsPlaying] = useState(false);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -21,27 +21,27 @@ export default function Game() {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    if (!state.currentPlayer || state.roomId !== roomId) {
+    if (!gameState.currentPlayer && !isLoading) {
       navigate('/');
     }
-  }, [state.currentPlayer, state.roomId, roomId, navigate]);
+  }, [gameState.currentPlayer, isLoading, navigate]);
 
   useEffect(() => {
-    if (state.gameStatus === 'finished') {
+    if (gameState.gameStatus === 'finished') {
       navigate(`/results/${roomId}`);
     }
-  }, [state.gameStatus, roomId, navigate]);
+  }, [gameState.gameStatus, roomId, navigate]);
 
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (state.timeLeft > 0 && state.gameStatus === 'playing') {
+    if (gameState.timeRemaining > 0 && gameState.gameStatus === 'playing') {
       interval = setInterval(() => {
         // This would be handled by the socket in a real implementation
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [state.timeLeft, state.gameStatus]);
+  }, [gameState.timeRemaining, gameState.gameStatus]);
 
   const handlePlayPause = () => {
     if (audioRef.current) {
@@ -63,25 +63,33 @@ export default function Game() {
     toast.success('Answer submitted!');
   };
 
-  if (!state.currentPlayer || !roomId) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white text-xl">
+        Loading game...
+      </div>
+    );
+  }
+
+  if (!gameState.currentPlayer || !roomId) {
     return null;
   }
 
-  const timePercentage = state.timeLeft > 0 ? (state.timeLeft / 30) * 100 : 0;
-  const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+  const timePercentage = gameState.timeRemaining > 0 ? (gameState.timeRemaining / 30) * 100 : 0;
+  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
 
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
         {/* Game Header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
           <div className="flex items-center justify-center gap-4 mb-4">
             <Badge variant="secondary" className="bg-purple-500/20 text-purple-200">
-              Round {state.round} / {state.maxRounds}
+              Round {gameState.songIndex + 1} / {gameState.totalSongs}
             </Badge>
             <Badge variant="secondary" className="bg-blue-500/20 text-blue-200">
               Room: {roomId}
@@ -114,12 +122,12 @@ export default function Game() {
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-blue-400" />
                       <span className="text-lg font-bold text-white">
-                        {Math.max(0, state.timeLeft)}s
+                        {Math.max(0, gameState.timeRemaining)}s
                       </span>
                     </div>
                   </div>
-                  <Progress 
-                    value={timePercentage} 
+                  <Progress
+                    value={timePercentage}
                     className="h-2 bg-white/20"
                   />
                 </div>
@@ -145,7 +153,7 @@ export default function Game() {
                 {/* Hidden audio element */}
                 <audio
                   ref={audioRef}
-                  src={state.currentSong?.audioUrl}
+                  src={gameState.currentSong?.audioUrl}
                   onEnded={() => setIsPlaying(false)}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
@@ -166,7 +174,7 @@ export default function Game() {
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="Enter the song title..."
-                      disabled={hasSubmitted || state.timeLeft === 0}
+                      disabled={hasSubmitted || gameState.timeRemaining === 0}
                       className="bg-white/20 border-white/30 text-white placeholder:text-purple-300"
                     />
                   </div>
@@ -176,13 +184,13 @@ export default function Game() {
                       value={artist}
                       onChange={(e) => setArtist(e.target.value)}
                       placeholder="Enter the artist name..."
-                      disabled={hasSubmitted || state.timeLeft === 0}
+                      disabled={hasSubmitted || gameState.timeRemaining === 0}
                       className="bg-white/20 border-white/30 text-white placeholder:text-purple-300"
                     />
                   </div>
                   <Button
                     type="submit"
-                    disabled={!title.trim() || !artist.trim() || hasSubmitted || state.timeLeft === 0}
+                    disabled={!title.trim() || !artist.trim() || hasSubmitted || gameState.timeRemaining === 0}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 font-semibold"
                   >
                     {hasSubmitted ? 'Answer Submitted!' : 'Submit Answer'}
@@ -227,7 +235,7 @@ export default function Game() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className={`flex items-center justify-between p-3 rounded-lg ${
-                          player.id === state.currentPlayer?.id
+                          player.id === gameState.currentPlayer?.id
                             ? 'bg-purple-500/20 border border-purple-500/30'
                             : 'bg-white/5'
                         }`}
@@ -243,8 +251,8 @@ export default function Game() {
                           </div>
                           <div>
                             <div className="font-medium text-white">
-                              {player.username}
-                              {player.id === state.currentPlayer?.id && (
+                              {player.name}
+                              {player.id === gameState.currentPlayer?.id && (
                                 <span className="text-purple-300 text-sm ml-1">(You)</span>
                               )}
                             </div>

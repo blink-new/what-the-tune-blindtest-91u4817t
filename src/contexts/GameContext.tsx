@@ -50,6 +50,7 @@ interface GameContextType {
   leaveRoom: () => void;
   nextSong: () => void;
   setTimeRemaining: (time: number) => void;
+  isLoading: boolean;
 }
 
 const defaultGameState: GameState = {
@@ -82,6 +83,44 @@ interface GameProviderProps {
 
 export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>(defaultGameState);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load state from localStorage on initial mount
+  useEffect(() => {
+    const storedRoomId = localStorage.getItem('roomId');
+    const storedPlayer = localStorage.getItem('currentPlayer');
+
+    if (storedRoomId && storedPlayer) {
+      try {
+        const player: Player = JSON.parse(storedPlayer);
+        setGameState(prev => ({
+          ...prev,
+          roomId: storedRoomId,
+          currentPlayer: player,
+          players: [player],
+        }));
+      } catch (e) {
+        console.error("Failed to parse stored player data", e);
+        localStorage.removeItem('roomId');
+        localStorage.removeItem('currentPlayer');
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  // Save state to localStorage whenever roomId or currentPlayer changes
+  useEffect(() => {
+    if (gameState.roomId) {
+      localStorage.setItem('roomId', gameState.roomId);
+    } else {
+      localStorage.removeItem('roomId');
+    }
+    if (gameState.currentPlayer) {
+      localStorage.setItem('currentPlayer', JSON.stringify(gameState.currentPlayer));
+    } else {
+      localStorage.removeItem('currentPlayer');
+    }
+  }, [gameState.roomId, gameState.currentPlayer]);
 
   // WebSocket connection will be implemented here
   useEffect(() => {
@@ -110,6 +149,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       currentPlayer: newPlayer,
     }));
 
+    localStorage.setItem('roomId', roomId);
+    localStorage.setItem('currentPlayer', JSON.stringify(newPlayer));
+
     return roomId;
   };
 
@@ -128,6 +170,9 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       players: [...prev.players, newPlayer],
       currentPlayer: newPlayer,
     }));
+
+    localStorage.setItem('roomId', roomId);
+    localStorage.setItem('currentPlayer', JSON.stringify(newPlayer));
   };
 
   const toggleReady = () => {
@@ -177,7 +222,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
       title,
       artist,
       timestamp: Date.now(),
-      isCorrect: false, // Will be validated by backend
+      isCorrect: false,
       points: 0,
     };
 
@@ -191,6 +236,8 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
 
   const leaveRoom = () => {
     setGameState(defaultGameState);
+    localStorage.removeItem('roomId');
+    localStorage.removeItem('currentPlayer');
     // TODO: Notify backend via WebSocket
   };
 
@@ -208,6 +255,7 @@ export const GameProvider: React.FC<GameProviderProps> = ({ children }) => {
     leaveRoom,
     nextSong,
     setTimeRemaining,
+    isLoading,
   };
 
   return (

@@ -10,10 +10,10 @@ import toast from 'react-hot-toast';
 export default function Results() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
-  const { state, leaveRoom } = useGame();
+  const { gameState, leaveRoom, isLoading } = useGame();
 
-  const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
-  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === state.currentPlayer?.id) + 1;
+  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === gameState.currentPlayer?.id) + 1;
 
   const handlePlayAgain = () => {
     // In a real implementation, this would reset the game
@@ -26,7 +26,7 @@ export default function Results() {
   };
 
   const handleShare = () => {
-    const shareText = `I just played What the Tune? and ranked #${currentPlayerRank} with ${state.currentPlayer?.score} points! Join me for a music blindtest battle!`;
+    const shareText = `I just played What the Tune? and ranked #${currentPlayerRank} with ${gameState.currentPlayer?.score} points! Join me for a music blindtest battle!`;
     if (navigator.share) {
       navigator.share({
         title: 'What the Tune? - Results',
@@ -68,7 +68,15 @@ export default function Results() {
     }
   };
 
-  if (!state.currentPlayer || !roomId) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white text-xl">
+        Loading results...
+      </div>
+    );
+  }
+
+  if (!gameState.currentPlayer || !roomId) {
     navigate('/');
     return null;
   }
@@ -94,7 +102,7 @@ export default function Results() {
         </motion.div>
 
         {/* Player's Result */}
-        {state.currentPlayer && (
+        {gameState.currentPlayer && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -110,7 +118,7 @@ export default function Results() {
                   {currentPlayerRank === 1 ? 'Congratulations!' : 'Well Played!'}
                 </h2>
                 <p className="text-lg mb-4">
-                  You ranked #{currentPlayerRank} with {state.currentPlayer.score} points
+                  You ranked #{currentPlayerRank} with {gameState.currentPlayer.score} points
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <Button
@@ -147,7 +155,7 @@ export default function Results() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 + index * 0.1 }}
                     className={`flex items-center justify-between p-4 rounded-lg ${
-                      player.id === state.currentPlayer?.id
+                      player.id === gameState.currentPlayer?.id
                         ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 border border-purple-400/50'
                         : 'bg-white/5'
                     }`}
@@ -156,8 +164,8 @@ export default function Results() {
                       {getRankIcon(index + 1)}
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-lg">{player.username}</span>
-                          {player.id === state.currentPlayer?.id && (
+                          <span className="font-bold text-lg">{player.name}</span>
+                          {player.id === gameState.currentPlayer?.id && (
                             <Badge variant="secondary" className="bg-purple-500/30 text-purple-200">
                               You
                             </Badge>
